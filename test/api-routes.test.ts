@@ -39,7 +39,11 @@ describe("GET /api/health", () => {
     vi.mocked(fetchHealth).mockResolvedValue({
       ok: false,
       httpStatus: 502,
-      error: { kind: "upstream", message: "Gateway responded 500", status: 500 },
+      error: {
+        kind: "upstream",
+        message: "Gateway responded 500",
+        status: 500,
+      },
     });
     const res = await healthGET();
     expect(res.status).toBe(502);
@@ -90,7 +94,11 @@ describe("GET /api/metrics", () => {
     vi.mocked(fetchMetrics).mockResolvedValue({
       ok: false,
       httpStatus: 502,
-      error: { kind: "upstream", message: "Gateway responded 503", status: 503 },
+      error: {
+        kind: "upstream",
+        message: "Gateway responded 503",
+        status: 503,
+      },
     });
     const res = await metricsGET();
     expect(res.status).toBe(502);
