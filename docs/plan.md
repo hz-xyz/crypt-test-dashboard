@@ -19,6 +19,7 @@
 把脚手架变成一个有完整门禁的工程:补齐脚本、Prettier、Vitest 测试框架(含一个 smoke test)、GitHub Actions CI。
 
 **Files:**
+
 - Modify: `package.json`(scripts、devDependencies、engines、packageManager)
 - Create: `.prettierrc.json`
 - Create: `.prettierignore`
@@ -34,12 +35,13 @@
 cd /Users/huazhang/dev/ai/riema/crypt-test-dashboard
 pnpm add -D prettier vitest @vitejs/plugin-react jsdom \
   @testing-library/react @testing-library/jest-dom \
-  @testing-library/user-event vite-tsconfig-paths
+  @testing-library/user-event
 ```
 
 - [ ] **Step 2: 写 Prettier 配置**
 
 `.prettierrc.json`:
+
 ```json
 {
   "semi": true,
@@ -50,6 +52,7 @@ pnpm add -D prettier vitest @vitejs/plugin-react jsdom \
 ```
 
 `.prettierignore`:
+
 ```
 .next
 node_modules
@@ -62,13 +65,17 @@ coverage
 - [ ] **Step 3: 写 Vitest 配置**
 
 `vitest.config.ts`:
+
 ```ts
-import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
-import tsconfigPaths from "vite-tsconfig-paths";
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  plugins: [tsconfigPaths(), react()],
+  plugins: [react()],
+  resolve: {
+    // Native tsconfig `paths` resolution (Vite/Vitest built-in).
+    tsconfigPaths: true,
+  },
   test: {
     environment: "jsdom",
     globals: true,
@@ -79,6 +86,7 @@ export default defineConfig({
 ```
 
 `test/setup.ts`:
+
 ```ts
 import "@testing-library/jest-dom/vitest";
 ```
@@ -86,6 +94,7 @@ import "@testing-library/jest-dom/vitest";
 - [ ] **Step 4: 写 smoke test(只测无 server-only 依赖的纯函数)**
 
 `test/smoke.test.ts`:
+
 ```ts
 import { describe, expect, it } from "vitest";
 
@@ -106,6 +115,7 @@ describe("test harness smoke", () => {
 - [ ] **Step 5: 更新 package.json scripts 与元信息**
 
 把 `scripts` 改为:
+
 ```json
 "scripts": {
   "dev": "next dev",
@@ -120,16 +130,20 @@ describe("test harness smoke", () => {
   "test:coverage": "vitest run --coverage"
 }
 ```
+
 并在顶层补:
+
 ```json
 "engines": { "node": ">=20" },
 "packageManager": "pnpm@10.18.3"
 ```
+
 (`packageManager` 版本对齐本机 `pnpm -v`。)
 
 - [ ] **Step 6: 写 `.nvmrc`**
 
 `.nvmrc`:
+
 ```
 20
 ```
@@ -137,15 +151,18 @@ describe("test harness smoke", () => {
 - [ ] **Step 7: 本地跑通全部门禁**
 
 Run:
+
 ```bash
 pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build
 ```
+
 Expected: 全部通过;`pnpm test` 显示 smoke 2 个用例 PASS。
 若 `format:check` 报已有文件不符,先 `pnpm format` 再提交(格式化属本 task 范围)。
 
 - [ ] **Step 8: 写 CI**
 
 `.github/workflows/ci.yml`:
+
 ```yaml
 name: CI
 
@@ -191,6 +208,7 @@ git commit -m "chore: add tooling, prettier, vitest harness, and CI"
 为 `lib/gateway.ts` 的 `normalizeHealth` / `normalizeMetrics` 补特征化测试,锁定当前(防御式)行为,作为后续收紧归一化的安全网。
 
 **Files:**
+
 - Modify: `vitest.config.ts`(为 `server-only` 加 alias)
 - Create: `test/stubs/server-only.ts`
 - Create: `test/gateway.normalize.test.ts`
@@ -200,21 +218,28 @@ git commit -m "chore: add tooling, prettier, vitest harness, and CI"
 > `lib/gateway.ts` 顶部 `import "server-only"`。该包在非 RSC 的 Node/Vitest 环境会在 import 时抛错,需 alias 到空模块。
 
 `test/stubs/server-only.ts`:
+
 ```ts
 // Empty stub so server-only modules can be imported under Vitest.
 export {};
 ```
 
-在 `vitest.config.ts` 的 `defineConfig({...})` 顶层加 `resolve`:
+在 `vitest.config.ts` 已有的 `resolve` 块里加 `alias`(与 `tsconfigPaths: true` 并存):
+
 ```ts
   resolve: {
-    alias: { "server-only": new URL("./test/stubs/server-only.ts", import.meta.url).pathname },
+    tsconfigPaths: true,
+    alias: {
+      "server-only": new URL("./test/stubs/server-only.ts", import.meta.url)
+        .pathname,
+    },
   },
 ```
 
 - [ ] **Step 2: 写归一化测试(先看它们失败前先确认能 import)**
 
 `test/gateway.normalize.test.ts`:
+
 ```ts
 import { describe, expect, it } from "vitest";
 
@@ -234,7 +259,8 @@ describe("normalizeMetrics", () => {
   });
 
   it("prometheus text with status label", () => {
-    const text = 'payment_status_total{status="CREATED"} 3\npayment_status_total{status="FAILED"} 1';
+    const text =
+      'payment_status_total{status="CREATED"} 3\npayment_status_total{status="FAILED"} 1';
     const v = normalizeMetrics(text);
     expect(v.statusCounts).toEqual({ CREATED: 3, FAILED: 1 });
     expect(v.total).toBe(4);
@@ -287,12 +313,14 @@ git commit -m "test: characterize gateway normalizers"
 覆盖 `lib/env.ts`(必需变量缺失即抛、超时校验、末尾斜杠规整)与 `lib/api-client.ts`(把 `ApiError` 抛成 `ApiClientError`)。
 
 **Files:**
+
 - Create: `test/env.test.ts`
 - Create: `test/api-client.test.ts`
 
 - [ ] **Step 1: env 测试(用 resetModules + 动态 import 绕过缓存单例)**
 
 `test/env.test.ts`:
+
 ```ts
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -335,6 +363,7 @@ describe("getEnv", () => {
 - [ ] **Step 2: api-client 测试(stub 全局 fetch)**
 
 `test/api-client.test.ts`:
+
 ```ts
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -351,14 +380,23 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("api-client", () => {
   it("returns parsed data on success", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ up: true, raw: {}, fetchedAt: "x" })));
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(jsonResponse({ up: true, raw: {}, fetchedAt: "x" })),
+    );
     await expect(fetchHealth()).resolves.toMatchObject({ up: true });
   });
 
   it("throws ApiClientError carrying kind on a normalized error body", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(jsonResponse({ error: { kind: "timeout", message: "slow" } }, 504)),
+      vi
+        .fn()
+        .mockResolvedValue(
+          jsonResponse({ error: { kind: "timeout", message: "slow" } }, 504),
+        ),
     );
     await expect(fetchHealth()).rejects.toMatchObject({
       name: "ApiClientError",
@@ -373,6 +411,7 @@ describe("api-client", () => {
 
 Run: `pnpm test`
 Expected: 全部 PASS。
+
 ```bash
 git add -A
 git commit -m "test: cover env validation and api-client error mapping"
@@ -385,11 +424,13 @@ git commit -m "test: cover env validation and api-client error mapping"
 验证 Route Handler 在网关成功与失败两种情况下,分别返回归一化数据与正确的 `ApiError` + HTTP 状态。
 
 **Files:**
+
 - Create: `test/api-routes.test.ts`
 
 - [ ] **Step 1: 写路由测试(mock `@/lib/gateway`)**
 
 `test/api-routes.test.ts`:
+
 ```ts
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -423,7 +464,9 @@ describe("GET /api/health", () => {
     });
     const res = await healthGET();
     expect(res.status).toBe(504);
-    await expect(res.json()).resolves.toMatchObject({ error: { kind: "timeout" } });
+    await expect(res.json()).resolves.toMatchObject({
+      error: { kind: "timeout" },
+    });
   });
 });
 
@@ -459,12 +502,14 @@ git commit -m "test: cover /api/health and /api/metrics route handlers"
 加上 Vercel 部署配置与一份发布核对清单,确保密钥与访问控制不出错。
 
 **Files:**
+
 - Create: `vercel.json`
 - Modify: `README.md`(补「发布前核对」小节)
 
 - [ ] **Step 1: 写 `vercel.json`**
 
 `vercel.json`:
+
 ```json
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
@@ -475,6 +520,7 @@ git commit -m "test: cover /api/health and /api/metrics route handlers"
 - [ ] **Step 2: README 补发布前核对清单**
 
 在 README 「部署到 Vercel」小节后追加:
+
 ```markdown
 ### 发布前核对
 
@@ -488,6 +534,7 @@ git commit -m "test: cover /api/health and /api/metrics route handlers"
 
 Run: `pnpm build`
 Expected: 构建成功。
+
 ```bash
 git add -A
 git commit -m "chore: add vercel config and release checklist"

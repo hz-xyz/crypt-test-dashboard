@@ -30,7 +30,13 @@ export const PAYMENT_STATUSES = [
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
 /** Visual intent for a status badge. */
-export type StatusTone = "neutral" | "info" | "progress" | "success" | "danger" | "warning";
+export type StatusTone =
+  | "neutral"
+  | "info"
+  | "progress"
+  | "success"
+  | "danger"
+  | "warning";
 
 export const STATUS_TONE: Record<string, StatusTone> = {
   CREATED: "neutral",

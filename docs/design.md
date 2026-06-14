@@ -47,15 +47,15 @@ USD1Pay 测试网关  (GET /health, /metrics, …)
 
 ### 2.3 模块边界(每个文件单一职责)
 
-| 文件 | 职责 | 依赖 | 客户端可引用? |
-|------|------|------|----------------|
-| `lib/env.ts` | 校验并缓存必需环境变量,缺失即抛错 | `process.env` | 否(server-only) |
-| `lib/gateway.ts` | 网关 fetch(带 token/超时)+ 响应归一化 | `env.ts`, `types.ts` | 否(server-only) |
-| `lib/types.ts` | 归一化后的视图模型与错误契约,无密钥 | 无 | 是 |
-| `lib/api-client.ts` | 浏览器侧 fetch,只打 `/api/*`,把 `ApiError` 抛成 `ApiClientError` | `types.ts` | 是 |
-| `app/api/health/route.ts` | 代理 → 网关 `/health` | `gateway.ts` | —(服务端路由) |
-| `app/api/metrics/route.ts` | 代理 → 网关 `/metrics` | `gateway.ts` | —(服务端路由) |
-| `components/dashboard/*` | 看板 UI(状态卡片、健康面板、错误态、刷新指示) | `api-client.ts`, `types.ts` | 是 |
+| 文件                       | 职责                                                             | 依赖                        | 客户端可引用?   |
+| -------------------------- | ---------------------------------------------------------------- | --------------------------- | --------------- |
+| `lib/env.ts`               | 校验并缓存必需环境变量,缺失即抛错                                | `process.env`               | 否(server-only) |
+| `lib/gateway.ts`           | 网关 fetch(带 token/超时)+ 响应归一化                            | `env.ts`, `types.ts`        | 否(server-only) |
+| `lib/types.ts`             | 归一化后的视图模型与错误契约,无密钥                              | 无                          | 是              |
+| `lib/api-client.ts`        | 浏览器侧 fetch,只打 `/api/*`,把 `ApiError` 抛成 `ApiClientError` | `types.ts`                  | 是              |
+| `app/api/health/route.ts`  | 代理 → 网关 `/health`                                            | `gateway.ts`                | —(服务端路由)   |
+| `app/api/metrics/route.ts` | 代理 → 网关 `/metrics`                                           | `gateway.ts`                | —(服务端路由)   |
+| `components/dashboard/*`   | 看板 UI(状态卡片、健康面板、错误态、刷新指示)                    | `api-client.ts`, `types.ts` | 是              |
 
 ### 2.4 数据流与错误契约
 
@@ -82,11 +82,11 @@ USD1Pay 测试网关  (GET /health, /metrics, …)
 
 ## 4. 测试策略
 
-| 层级 | 范围 | 工具 |
-|------|------|------|
-| 单元 | `lib/gateway.ts` 归一化器(纯函数,最高价值)、`lib/env.ts` 校验、`api-client` 错误映射 | Vitest |
-| 路由 | `app/api/*` Route Handler 成功 + 错误契约(mock `gateway.ts`) | Vitest |
-| 组件(可选,后续) | `ErrorBanner` / `StatusCounts` 渲染态 | Vitest + Testing Library |
+| 层级            | 范围                                                                                 | 工具                     |
+| --------------- | ------------------------------------------------------------------------------------ | ------------------------ |
+| 单元            | `lib/gateway.ts` 归一化器(纯函数,最高价值)、`lib/env.ts` 校验、`api-client` 错误映射 | Vitest                   |
+| 路由            | `app/api/*` Route Handler 成功 + 错误契约(mock `gateway.ts`)                         | Vitest                   |
+| 组件(可选,后续) | `ErrorBanner` / `StatusCounts` 渲染态                                                | Vitest + Testing Library |
 
 归一化器是本系统**风险最高**的逻辑(要兼容未知 wire format),优先覆盖。CI 门禁:lint、typecheck、format:check、test、build 全绿才允许合并。
 

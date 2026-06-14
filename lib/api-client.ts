@@ -46,9 +46,17 @@ async function getJson<T>(path: string): Promise<T> {
     body = await res.json();
   } catch {
     if (!res.ok) {
-      throw new ApiClientError("upstream", `Request failed (${res.status}).`, res.status);
+      throw new ApiClientError(
+        "upstream",
+        `Request failed (${res.status}).`,
+        res.status,
+      );
     }
-    throw new ApiClientError("parse", "Response was not valid JSON.", res.status);
+    throw new ApiClientError(
+      "parse",
+      "Response was not valid JSON.",
+      res.status,
+    );
   }
 
   if (!res.ok || isApiError(body)) {
@@ -60,7 +68,11 @@ async function getJson<T>(path: string): Promise<T> {
         body.error.status,
       );
     }
-    throw new ApiClientError("upstream", `Request failed (${res.status}).`, res.status);
+    throw new ApiClientError(
+      "upstream",
+      `Request failed (${res.status}).`,
+      res.status,
+    );
   }
 
   return body as T;
