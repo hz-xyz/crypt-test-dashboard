@@ -1,11 +1,7 @@
 import "server-only";
 
 import { getEnv } from "./env";
-import type {
-  ApiError,
-  HealthView,
-  MetricsView,
-} from "./types";
+import type { ApiError, HealthView, MetricsView } from "./types";
 
 /**
  * Server-only gateway client.
@@ -35,7 +31,8 @@ async function gatewayFetch(path: string): Promise<GatewayResult<unknown>> {
       httpStatus: 500,
       error: {
         kind: "config",
-        message: e instanceof Error ? e.message : "Invalid server configuration.",
+        message:
+          e instanceof Error ? e.message : "Invalid server configuration.",
       },
     };
   }
@@ -156,7 +153,8 @@ export function normalizeHealth(raw: unknown): HealthView {
   if (typeof ok === "boolean") up = ok;
   if (statusText) {
     const s = statusText.toLowerCase();
-    if (["down", "unhealthy", "error", "fail", "failed"].includes(s)) up = false;
+    if (["down", "unhealthy", "error", "fail", "failed"].includes(s))
+      up = false;
     if (["ok", "up", "healthy", "ready"].includes(s)) up = true;
   }
 

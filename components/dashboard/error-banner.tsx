@@ -24,10 +24,8 @@ export function ErrorBanner({
   onRetry?: () => void;
 }) {
   const kind = error instanceof ApiClientError ? error.kind : "network";
-  const message =
-    error instanceof Error ? error.message : "未知错误。";
-  const status =
-    error instanceof ApiClientError ? error.status : undefined;
+  const message = error instanceof Error ? error.message : "未知错误。";
+  const status = error instanceof ApiClientError ? error.status : undefined;
   const label = KIND_LABEL[kind] ?? "请求失败";
 
   return (

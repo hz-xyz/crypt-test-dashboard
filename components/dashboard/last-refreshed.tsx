@@ -21,7 +21,9 @@ export function LastRefreshed({
     return () => clearInterval(id);
   }, []);
 
-  const seconds = updatedAt ? Math.max(0, Math.round((now - updatedAt) / 1000)) : null;
+  const seconds = updatedAt
+    ? Math.max(0, Math.round((now - updatedAt) / 1000))
+    : null;
 
   return (
     <span
