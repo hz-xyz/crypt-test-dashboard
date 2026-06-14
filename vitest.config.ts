@@ -6,6 +6,10 @@ export default defineConfig({
   resolve: {
     // Native tsconfig `paths` resolution (replaces vite-tsconfig-paths).
     tsconfigPaths: true,
+    alias: {
+      "server-only": new URL("./test/stubs/server-only.ts", import.meta.url)
+        .pathname,
+    },
   },
   test: {
     environment: "jsdom",
