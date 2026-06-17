@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { ApiClientError, fetchHealth } from "@/lib/api-client";
+import { ApiClientError, fetchHealth, fetchInfo } from "@/lib/api-client";
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -36,5 +36,17 @@ describe("api-client", () => {
       kind: "timeout",
     });
     await expect(fetchHealth()).rejects.toBeInstanceOf(ApiClientError);
+  });
+
+  it("fetchInfo returns parsed chain config on success", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          jsonResponse({ chainId: 97, tokens: [], raw: {}, fetchedAt: "x" }),
+        ),
+    );
+    await expect(fetchInfo()).resolves.toMatchObject({ chainId: 97 });
   });
 });
