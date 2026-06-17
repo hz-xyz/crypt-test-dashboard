@@ -83,6 +83,42 @@ export interface HealthView {
   fetchedAt: string;
 }
 
+/** A single supported token's on-chain config. */
+export interface TokenInfo {
+  /** Token symbol, e.g. "USD1" / "USDT" / "USDC". */
+  symbol: string;
+  /** BEP-20 contract address, if reported. */
+  address?: string;
+  /** Token decimals, if reported. */
+  decimals?: number;
+  /** Per-token fee in basis points (1 bps = 0.01%), if reported. */
+  feeBps?: number;
+}
+
+/**
+ * Normalized chain-config view (source: gateway `GET /api/v1/info`).
+ *
+ * Like HealthView, every operational field is optional/defensive — the
+ * gateway's `/api/v1/info` wire format is not yet frozen, so the normalizer
+ * tolerates several naming conventions and always preserves `raw`.
+ */
+export interface InfoView {
+  /** EVM chain id, e.g. 56 (BSC mainnet) / 97 (BSC testnet). */
+  chainId?: number;
+  /** Human-readable network name, e.g. "BSC Testnet". */
+  chainName?: string;
+  /** Confirmations required before a payment is considered final. */
+  confirmations?: number;
+  /** Supported tokens with their contract addresses. */
+  tokens: TokenInfo[];
+  /** Gateway-wide fee in basis points (1 bps = 0.01%), if reported. */
+  feeBps?: number;
+  /** Raw info payload, surfaced for debugging / future fields. */
+  raw: unknown;
+  /** ISO timestamp of when the gateway responded (server-side). */
+  fetchedAt: string;
+}
+
 /**
  * Normalized error contract returned by every Route Handler when the gateway
  * is unreachable, times out, or responds with an error. The frontend uses

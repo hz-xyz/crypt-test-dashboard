@@ -1,7 +1,13 @@
 import "server-only";
 
 import { getEnv } from "./env";
-import type { ApiError, HealthView, MetricsView } from "./types";
+import type {
+  ApiError,
+  HealthView,
+  InfoView,
+  MetricsView,
+  TokenInfo,
+} from "./types";
 
 /**
  * Server-only gateway client.
@@ -281,6 +287,119 @@ export function normalizeMetrics(raw: unknown): MetricsView {
   return { statusCounts, total, fetchedAt };
 }
 
+/**
+ * Resolve a fee, in basis points, from a record. Accepts an explicit bps field
+ * or a percent field (0.5 -> 50 bps). Returns undefined when neither is set.
+ */
+function pickFeeBps(obj: Record<string, unknown>): number | undefined {
+  const bps = asNumber(pick(obj, ["feeBps", "fee_bps"]));
+  if (bps !== undefined) return bps;
+  const percent = asNumber(
+    pick(obj, ["feePercent", "fee_percent", "feeRate", "fee_rate", "fee"]),
+  );
+  if (percent !== undefined) return Math.round(percent * 100);
+  return undefined;
+}
+
+/** Normalize a single token entry, given its symbol and a raw record. */
+function normalizeToken(symbol: string, raw: unknown): TokenInfo {
+  const token: TokenInfo = { symbol };
+  if (typeof raw !== "object" || raw === null) return token;
+
+  const obj = raw as Record<string, unknown>;
+  const address = pick(obj, [
+    "address",
+    "contract",
+    "contractAddress",
+    "contract_address",
+    "addr",
+  ]);
+  if (typeof address === "string") token.address = address;
+
+  const decimals = asNumber(pick(obj, ["decimals", "decimal"]));
+  if (decimals !== undefined) token.decimals = decimals;
+
+  const feeBps = pickFeeBps(obj);
+  if (feeBps !== undefined) token.feeBps = feeBps;
+
+  return token;
+}
+
+/** Normalize a collection of tokens, which may be an array or a symbol map. */
+function normalizeTokens(raw: unknown): TokenInfo[] {
+  if (Array.isArray(raw)) {
+    return raw
+      .map((entry) => {
+        if (typeof entry !== "object" || entry === null) return undefined;
+        const obj = entry as Record<string, unknown>;
+        const symbol = pick(obj, ["symbol", "name", "token", "ticker"]);
+        if (typeof symbol !== "string") return undefined;
+        return normalizeToken(symbol, obj);
+      })
+      .filter((t): t is TokenInfo => t !== undefined);
+  }
+  if (typeof raw === "object" && raw !== null) {
+    // Symbol-keyed map: { USD1: { address, decimals }, ... }
+    return Object.entries(raw as Record<string, unknown>).map(([symbol, v]) =>
+      normalizeToken(symbol, v),
+    );
+  }
+  return [];
+}
+
+/**
+ * Normalize the /api/v1/info payload into InfoView. Tolerant of snake_case /
+ * camelCase, a tokens array or symbol-keyed map, and a fee given as basis
+ * points or a percent. Always preserves `raw`.
+ */
+export function normalizeInfo(raw: unknown): InfoView {
+  const fetchedAt = new Date().toISOString();
+  const base: InfoView = { tokens: [], raw, fetchedAt };
+
+  if (typeof raw !== "object" || raw === null) {
+    return base;
+  }
+
+  const obj = raw as Record<string, unknown>;
+
+  const chainId = asNumber(
+    pick(obj, ["chainId", "chain_id", "networkId", "network_id"]),
+  );
+
+  const chainNameRaw = pick(obj, [
+    "chainName",
+    "chain_name",
+    "network",
+    "networkName",
+    "network_name",
+  ]);
+  const chainName = typeof chainNameRaw === "string" ? chainNameRaw : undefined;
+
+  const confirmations = asNumber(
+    pick(obj, [
+      "confirmations",
+      "confirmation",
+      "minConfirmations",
+      "min_confirmations",
+      "requiredConfirmations",
+      "required_confirmations",
+    ]),
+  );
+
+  const tokens = normalizeTokens(
+    pick(obj, ["tokens", "contracts", "supportedTokens", "supported_tokens"]),
+  );
+
+  return {
+    ...base,
+    chainId,
+    chainName,
+    confirmations,
+    tokens,
+    feeBps: pickFeeBps(obj),
+  };
+}
+
 export async function fetchHealth(): Promise<GatewayResult<HealthView>> {
   const res = await gatewayFetch("/health");
   if (!res.ok) return res;
@@ -291,4 +410,10 @@ export async function fetchMetrics(): Promise<GatewayResult<MetricsView>> {
   const res = await gatewayFetch("/metrics");
   if (!res.ok) return res;
   return { ok: true, data: normalizeMetrics(res.data) };
+}
+
+export async function fetchInfo(): Promise<GatewayResult<InfoView>> {
+  const res = await gatewayFetch("/api/v1/info");
+  if (!res.ok) return res;
+  return { ok: true, data: normalizeInfo(res.data) };
 }

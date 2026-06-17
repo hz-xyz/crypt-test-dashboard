@@ -4,8 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { fetchHealth, fetchMetrics } from "@/lib/api-client";
+import { fetchHealth, fetchInfo, fetchMetrics } from "@/lib/api-client";
 
+import { ChainInfo } from "./chain-info";
 import { ErrorBanner } from "./error-banner";
 import { HealthPanel } from "./health-panel";
 import { LastRefreshed } from "./last-refreshed";
@@ -25,6 +26,14 @@ export function Dashboard() {
     queryKey: ["health"],
     queryFn: fetchHealth,
     refetchInterval: POLL_MS,
+  });
+
+  // Chain config rarely changes; poll lazily and lean on the cache.
+  const info = useQuery({
+    queryKey: ["info"],
+    queryFn: fetchInfo,
+    refetchInterval: POLL_MS * 15,
+    staleTime: POLL_MS * 15,
   });
 
   const lastUpdated = Math.max(metrics.dataUpdatedAt, health.dataUpdatedAt);
@@ -93,6 +102,20 @@ export function Dashboard() {
           />
         ) : (
           <HealthPanel health={health.data} isLoading={health.isLoading} />
+        )}
+      </section>
+
+      {/* Chain config (source: gateway /api/v1/info) */}
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-semibold text-muted-foreground">链配置</h2>
+        {info.isError ? (
+          <ErrorBanner
+            title="/api/v1/info"
+            error={info.error}
+            onRetry={() => void info.refetch()}
+          />
+        ) : (
+          <ChainInfo info={info.data} isLoading={info.isLoading} />
         )}
       </section>
 

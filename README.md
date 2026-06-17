@@ -6,6 +6,7 @@
 
 - **支付状态计数**(CREATED / PENDING / CONFIRMING / CONFIRMED / COMPLETED / FAILED / EXPIRED)— 状态徽章 + 数字卡片,来源 `/metrics`
 - **网关健康度** — 整体 UP/DOWN、getLogs 策略(per-address / bulk)、区块游标差距(`last_processed_block` 与链高)、watch set 大小,来源 `/health`
+- **链配置** — 链 ID、确认数、token 合约地址、费率,来源 `/api/v1/info`
 - **自动轮询**(每 4s)+ 最后刷新时间
 - **网关不可达 / 超时 / 报错** 时的明确错误态(超时、无法连接、上游错误、配置缺失分别提示),绝不静默
 
@@ -32,6 +33,7 @@ app/
   api/
     health/route.ts     # 代理 → 网关 /health(归一化为 HealthView)
     metrics/route.ts    # 代理 → 网关 /metrics(归一化为 MetricsView)
+    info/route.ts       # 代理 → 网关 /api/v1/info(归一化为 InfoView,链配置)
   layout.tsx            # 根布局,挂载 Providers
   providers.tsx         # TanStack Query Provider(client)
   page.tsx              # 首屏 → <Dashboard/>

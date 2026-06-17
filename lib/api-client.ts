@@ -1,4 +1,4 @@
-import type { HealthView, MetricsView } from "./types";
+import type { HealthView, InfoView, MetricsView } from "./types";
 import { isApiError } from "./types";
 
 /**
@@ -84,4 +84,8 @@ export function fetchHealth(): Promise<HealthView> {
 
 export function fetchMetrics(): Promise<MetricsView> {
   return getJson<MetricsView>("/api/metrics");
+}
+
+export function fetchInfo(): Promise<InfoView> {
+  return getJson<InfoView>("/api/info");
 }
