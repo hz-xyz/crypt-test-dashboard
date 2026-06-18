@@ -109,6 +109,13 @@ vercel env add GATEWAY_TIMEOUT_MS   # 可选
 
 > 因为监控的是**测试**网关且看板可读取运行态,务必开启上述保护,避免测试数据 / 网关状态对外暴露。
 
+### 发布前核对
+
+- [ ] `GATEWAY_BASE_URL` / `GATEWAY_ADMIN_TOKEN` 已在 Vercel 配置,且**不带** `NEXT_PUBLIC_` 前缀
+- [ ] Production 与 Preview 均已开启 Deployment Protection
+- [ ] CI 全绿(format/lint/typecheck/test/build)
+- [ ] 预览部署打开后,网关连通时显示计数与健康度;断开时显示明确错误态(非崩溃)
+
 ## 下一步(已预留结构,本次未实现)
 
 - 支付流水(`/api/v1/payments/:id`)、SSE 实时状态(`/events`)
