@@ -70,7 +70,16 @@ export async function POST(request: Request) {
   }
 
   const ref = crypto.randomUUID();
-  const callbackUrl = `${env.PUBLIC_APP_URL}/api/webhooks/usd1pay?ref=${ref}`;
+  // Build the callback URL; when running behind Vercel Deployment Protection,
+  // append the automation bypass token so the gateway's POST is not 401'd.
+  const params = new URLSearchParams({ ref });
+  if (env.VERCEL_AUTOMATION_BYPASS_SECRET) {
+    params.set(
+      "x-vercel-protection-bypass",
+      env.VERCEL_AUTOMATION_BYPASS_SECRET,
+    );
+  }
+  const callbackUrl = `${env.PUBLIC_APP_URL}/api/webhooks/usd1pay?${params.toString()}`;
 
   const result = await createPayment(
     {

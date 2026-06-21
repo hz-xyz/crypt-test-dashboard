@@ -76,4 +76,18 @@ describe("getEnv", () => {
     const { getEnv } = await import("@/lib/env");
     expect(getEnv().DEFAULT_PAYOUT_ADDRESS).toBe("0xABCdef");
   });
+
+  it("reads optional VERCEL_AUTOMATION_BYPASS_SECRET", async () => {
+    vi.stubEnv("GATEWAY_BASE_URL", "http://host:8080");
+    vi.stubEnv("VERCEL_AUTOMATION_BYPASS_SECRET", "byp");
+    const { getEnv } = await import("@/lib/env");
+    expect(getEnv().VERCEL_AUTOMATION_BYPASS_SECRET).toBe("byp");
+  });
+
+  it("leaves VERCEL_AUTOMATION_BYPASS_SECRET undefined when unset", async () => {
+    vi.stubEnv("GATEWAY_BASE_URL", "http://host:8080");
+    vi.stubEnv("VERCEL_AUTOMATION_BYPASS_SECRET", "");
+    const { getEnv } = await import("@/lib/env");
+    expect(getEnv().VERCEL_AUTOMATION_BYPASS_SECRET).toBeUndefined();
+  });
 });

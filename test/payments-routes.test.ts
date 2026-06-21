@@ -107,6 +107,33 @@ describe("POST /api/payments", () => {
     expect(res.status).toBe(400);
     expect(createPayment).not.toHaveBeenCalled();
   });
+
+  it("appends the bypass token to the callback URL when configured", async () => {
+    vi.mocked(getEnv).mockReturnValue({
+      PUBLIC_APP_URL: "https://app.example.com",
+      DEFAULT_PAYOUT_ADDRESS: undefined,
+      VERCEL_AUTOMATION_BYPASS_SECRET: "byp",
+    } as ReturnType<typeof getEnv>);
+    vi.mocked(createPayment).mockResolvedValue({
+      ok: true,
+      data: {
+        ref: "x",
+        addressIn: "0xAbc",
+        callbackUrl: "u",
+        raw: {},
+        fetchedAt: "t",
+      },
+    });
+
+    await createPOST(postReq({ token: "usd1", address: "0xDef" }));
+    const callbackUrl = vi.mocked(createPayment).mock.calls[0][2] as string;
+    const u = new URL(callbackUrl);
+    expect(u.origin + u.pathname).toBe(
+      "https://app.example.com/api/webhooks/usd1pay",
+    );
+    expect(u.searchParams.get("x-vercel-protection-bypass")).toBe("byp");
+    expect(u.searchParams.get("ref")).toBeTruthy();
+  });
 });
 
 describe("GET /api/payments/[id]", () => {
