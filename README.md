@@ -114,6 +114,16 @@ pnpm dev
 - 金额按 18 位精度(÷10^18)换算为币本位展示。
 - 接口契约见网关仓库 `usd1pay/docs/payment-callback-integration-guide.md`。
 
+### 在线模式(部署到 Vercel 也能可靠收回调)
+
+默认 R5 是本地联调。要让部署后的站点也能收回调,需三项(均在 Vercel 配置,代码自动适配):
+
+1. **Upstash Redis(KV)**:Marketplace 加 Upstash 集成,自动注入 `KV_REST_API_URL/TOKEN`。回调改存 Redis(`cb:ref:<ref>` / `cb:recent`,TTL 7 天),跨实例不丢;本地无 KV 时自动回退内存。
+2. **Protection Bypass for Automation**:Settings → Deployment Protection 开启,注入 `VERCEL_AUTOMATION_BYPASS_SECRET`。创建支付时自动把它作为 `x-vercel-protection-bypass` 拼进回调 URL,网关回调即可穿过 401;看板/操作台其余路径仍需登录。回调照样 RSA 验签。
+3. **`PUBLIC_APP_URL`**:设为站点对外地址(如 `https://crypt-test-dashboard.vercel.app`),作为回调前缀。
+
+> 权衡:bypass token 会出现在交给网关的回调 URL 中,可能进网关日志;对测试环境可接受,伪造防护仍是 RSA 验签。
+
 ## 部署到 Vercel
 
 ```bash
