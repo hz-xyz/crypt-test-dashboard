@@ -54,23 +54,23 @@ USD1Pay 测试网关  (GET /health, /metrics, …)
 
 ### 2.3 模块边界(每个文件单一职责)
 
-| 文件                       | 职责                                                             | 依赖                        | 客户端可引用?   |
-| -------------------------- | ---------------------------------------------------------------- | --------------------------- | --------------- |
-| `lib/env.ts`               | 校验并缓存必需环境变量,缺失即抛错                                | `process.env`               | 否(server-only) |
-| `lib/gateway.ts`           | 网关 fetch(带 token/超时)+ 响应归一化                            | `env.ts`, `types.ts`        | 否(server-only) |
-| `lib/types.ts`             | 归一化后的视图模型与错误契约,无密钥                              | 无                          | 是              |
-| `lib/api-client.ts`        | 浏览器侧 fetch,只打 `/api/*`,把 `ApiError` 抛成 `ApiClientError` | `types.ts`                  | 是              |
-| `app/api/health/route.ts`  | 代理 → 网关 `/health`                                            | `gateway.ts`                | —(服务端路由)   |
-| `app/api/metrics/route.ts` | 代理 → 网关 `/metrics`                                           | `gateway.ts`                | —(服务端路由)   |
-| `components/dashboard/*`   | 看板 UI(状态卡片、健康面板、错误态、刷新指示)                    | `api-client.ts`, `types.ts` | 是              |
-| **R5 操作台模块**          |                                                                  |                             |                 |
-| `lib/payments.ts`          | 创建支付(GET+query)、查单笔、拉取并缓存 `/pubkey/`、验签、归一化(创建响应 / 查单 wei→币本位 / 回调体) | `env.ts`, `types.ts` | 否(server-only) |
-| `lib/callback-store.ts`    | 内存环形缓冲:`record()` / `listByRef()` / `listRecent()`,按 `ref` 关联回调 | `types.ts`        | 否(server-only) |
-| `app/api/payments/route.ts`     | POST(UI→):生成 `ref` 与 callback URL → 调网关创建 → 返回 `{ ref, addressIn, callbackUrl, raw }` | `payments.ts`, `env.ts` | —(服务端路由) |
-| `app/api/payments/[id]/route.ts`| GET:代理查单笔 `GET /api/v1/payments/{id}`,金额 wei→币本位      | `payments.ts`               | —(服务端路由)   |
-| `app/api/webhooks/usd1pay/route.ts` | POST(网关→):读原始字节、验签、按 `ref` 入缓冲、返回 `200 "ok"`(Node runtime) | `payments.ts`, `callback-store.ts` | —(服务端路由) |
-| `app/api/webhooks/route.ts`     | GET:UI 轮询读最近回调(可按 `ref` 过滤)                         | `callback-store.ts`         | —(服务端路由)   |
-| `components/console/*`     | 操作台 UI(发起表单、收款地址、回调时间线、权威终态)              | `api-client.ts`, `types.ts` | 是              |
+| 文件                                | 职责                                                                                                  | 依赖                               | 客户端可引用?   |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------- | --------------- |
+| `lib/env.ts`                        | 校验并缓存必需环境变量,缺失即抛错                                                                     | `process.env`                      | 否(server-only) |
+| `lib/gateway.ts`                    | 网关 fetch(带 token/超时)+ 响应归一化                                                                 | `env.ts`, `types.ts`               | 否(server-only) |
+| `lib/types.ts`                      | 归一化后的视图模型与错误契约,无密钥                                                                   | 无                                 | 是              |
+| `lib/api-client.ts`                 | 浏览器侧 fetch,只打 `/api/*`,把 `ApiError` 抛成 `ApiClientError`                                      | `types.ts`                         | 是              |
+| `app/api/health/route.ts`           | 代理 → 网关 `/health`                                                                                 | `gateway.ts`                       | —(服务端路由)   |
+| `app/api/metrics/route.ts`          | 代理 → 网关 `/metrics`                                                                                | `gateway.ts`                       | —(服务端路由)   |
+| `components/dashboard/*`            | 看板 UI(状态卡片、健康面板、错误态、刷新指示)                                                         | `api-client.ts`, `types.ts`        | 是              |
+| **R5 操作台模块**                   |                                                                                                       |                                    |                 |
+| `lib/payments.ts`                   | 创建支付(GET+query)、查单笔、拉取并缓存 `/pubkey/`、验签、归一化(创建响应 / 查单 wei→币本位 / 回调体) | `env.ts`, `types.ts`               | 否(server-only) |
+| `lib/callback-store.ts`             | 内存环形缓冲:`record()` / `listByRef()` / `listRecent()`,按 `ref` 关联回调                            | `types.ts`                         | 否(server-only) |
+| `app/api/payments/route.ts`         | POST(UI→):生成 `ref` 与 callback URL → 调网关创建 → 返回 `{ ref, addressIn, callbackUrl, raw }`       | `payments.ts`, `env.ts`            | —(服务端路由)   |
+| `app/api/payments/[id]/route.ts`    | GET:代理查单笔 `GET /api/v1/payments/{id}`,金额 wei→币本位                                            | `payments.ts`                      | —(服务端路由)   |
+| `app/api/webhooks/usd1pay/route.ts` | POST(网关→):读原始字节、验签、按 `ref` 入缓冲、返回 `200 "ok"`(Node runtime)                          | `payments.ts`, `callback-store.ts` | —(服务端路由)   |
+| `app/api/webhooks/route.ts`         | GET:UI 轮询读最近回调(可按 `ref` 过滤)                                                                | `callback-store.ts`                | —(服务端路由)   |
+| `components/console/*`              | 操作台 UI(发起表单、收款地址、回调时间线、权威终态)                                                   | `api-client.ts`, `types.ts`        | 是              |
 
 ### 2.4 数据流与错误契约
 
@@ -117,6 +117,7 @@ COMPLETED / FAILED / EXPIRED(终态)
 ```
 
 **新增环境变量**:
+
 - `PUBLIC_APP_URL`(默认 `http://localhost:3000`),仅服务端用于拼装交给网关的**绝对** callback URL。它必须是网关能回访到的地址(本地联调即本机端口;若网关在容器内,用宿主机可达地址)。
 - `DEFAULT_PAYOUT_ADDRESS`(**可选**,无默认值):测试支付的默认转出地址 `address_out`。配了它,`/console` 表单预填该值、且 `POST /api/payments` 在未传 `address` 时兜底用它;没配则该字段必填。免去联调时每次手敲地址。
 

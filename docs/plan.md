@@ -682,7 +682,9 @@ git commit -m "chore: add vercel config and release checklist"
 
   ```ts
   // "10000000000000000000" -> "10". 纯字符串移位,18 位定点。
-  function weiToCoin(wei: string, decimals = 18): string { /* ... */ }
+  function weiToCoin(wei: string, decimals = 18): string {
+    /* ... */
+  }
   ```
 
 - [ ] **Step 3: 测试**
