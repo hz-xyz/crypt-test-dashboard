@@ -19,36 +19,37 @@ function rec(ref: string, i: number): CallbackRecord {
   };
 }
 
-describe("callback-store", () => {
-  beforeEach(() => __resetForTest());
+describe("callback-store (in-memory fallback)", () => {
+  beforeEach(async () => {
+    await __resetForTest();
+  });
 
-  it("returns records newest-first", () => {
-    record(rec("a", 1));
-    record(rec("a", 2));
-    const all = listRecent();
+  it("returns records newest-first", async () => {
+    await record(rec("a", 1));
+    await record(rec("a", 2));
+    const all = await listRecent();
     expect(all.map((r) => r.uuid)).toEqual(["a-2", "a-1"]);
   });
 
-  it("filters by ref", () => {
-    record(rec("a", 1));
-    record(rec("b", 1));
-    record(rec("a", 2));
-    expect(listByRef("a").map((r) => r.uuid)).toEqual(["a-2", "a-1"]);
-    expect(listByRef("b").map((r) => r.uuid)).toEqual(["b-1"]);
-    expect(listByRef("missing")).toEqual([]);
+  it("filters by ref", async () => {
+    await record(rec("a", 1));
+    await record(rec("b", 1));
+    await record(rec("a", 2));
+    expect((await listByRef("a")).map((r) => r.uuid)).toEqual(["a-2", "a-1"]);
+    expect((await listByRef("b")).map((r) => r.uuid)).toEqual(["b-1"]);
+    expect(await listByRef("missing")).toEqual([]);
   });
 
-  it("caps the buffer, evicting the oldest", () => {
-    for (let i = 0; i < CALLBACK_BUFFER_CAP + 5; i++) record(rec("a", i));
-    const all = listRecent();
+  it("caps the buffer, evicting the oldest", async () => {
+    for (let i = 0; i < CALLBACK_BUFFER_CAP + 5; i++) await record(rec("a", i));
+    const all = await listRecent();
     expect(all).toHaveLength(CALLBACK_BUFFER_CAP);
-    // Newest first; the 5 oldest (0..4) were evicted.
     expect(all[0].uuid).toBe(`a-${CALLBACK_BUFFER_CAP + 4}`);
     expect(all.at(-1)!.uuid).toBe("a-5");
   });
 
-  it("honors an explicit limit on listRecent", () => {
-    for (let i = 0; i < 10; i++) record(rec("a", i));
-    expect(listRecent(3)).toHaveLength(3);
+  it("honors an explicit limit on listRecent", async () => {
+    for (let i = 0; i < 10; i++) await record(rec("a", i));
+    expect(await listRecent(3)).toHaveLength(3);
   });
 });
