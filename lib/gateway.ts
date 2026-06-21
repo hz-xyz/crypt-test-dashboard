@@ -48,12 +48,16 @@ async function gatewayFetch(path: string): Promise<GatewayResult<unknown>> {
   const timer = setTimeout(() => controller.abort(), env.GATEWAY_TIMEOUT_MS);
 
   try {
+    const headers: Record<string, string> = { Accept: "application/json" };
+    // Only authenticate when a token is configured; the gateway's endpoints may
+    // be public, in which case we send no Authorization header at all.
+    if (env.GATEWAY_ADMIN_TOKEN) {
+      headers.Authorization = `Bearer ${env.GATEWAY_ADMIN_TOKEN}`;
+    }
+
     const res = await fetch(url, {
       method: "GET",
-      headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${env.GATEWAY_ADMIN_TOKEN}`,
-      },
+      headers,
       signal: controller.signal,
       // Never cache operational data; we want live status.
       cache: "no-store",

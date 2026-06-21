@@ -15,8 +15,11 @@ import "server-only";
 export interface Env {
   /** Base URL of the test payment gateway, e.g. https://gateway.internal:8080 */
   GATEWAY_BASE_URL: string;
-  /** Admin/bearer token for privileged gateway endpoints. */
-  GATEWAY_ADMIN_TOKEN: string;
+  /**
+   * Admin/bearer token for the gateway. Optional: only required if the gateway
+   * protects its endpoints. When set, it is sent as `Authorization: Bearer`.
+   */
+  GATEWAY_ADMIN_TOKEN?: string;
   /** Per-request timeout to the gateway, in milliseconds. Default 5000. */
   GATEWAY_TIMEOUT_MS: number;
 }
@@ -37,8 +40,10 @@ function readEnv(): Env {
   const GATEWAY_BASE_URL = process.env.GATEWAY_BASE_URL?.trim();
   if (!GATEWAY_BASE_URL) missing.push("GATEWAY_BASE_URL");
 
-  const GATEWAY_ADMIN_TOKEN = process.env.GATEWAY_ADMIN_TOKEN?.trim();
-  if (!GATEWAY_ADMIN_TOKEN) missing.push("GATEWAY_ADMIN_TOKEN");
+  // Optional: only needed when the gateway protects its endpoints. An empty or
+  // unset value means we send no Authorization header at all.
+  const GATEWAY_ADMIN_TOKEN =
+    process.env.GATEWAY_ADMIN_TOKEN?.trim() || undefined;
 
   if (missing.length > 0) {
     throw new MissingEnvError(missing);
@@ -57,7 +62,7 @@ function readEnv(): Env {
 
   return {
     GATEWAY_BASE_URL: baseUrl,
-    GATEWAY_ADMIN_TOKEN: GATEWAY_ADMIN_TOKEN!,
+    GATEWAY_ADMIN_TOKEN,
     GATEWAY_TIMEOUT_MS,
   };
 }

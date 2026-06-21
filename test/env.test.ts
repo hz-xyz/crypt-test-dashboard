@@ -9,11 +9,26 @@ describe("getEnv", () => {
     vi.unstubAllEnvs();
   });
 
-  it("throws when required vars are missing", async () => {
+  it("throws when GATEWAY_BASE_URL is missing", async () => {
     vi.stubEnv("GATEWAY_BASE_URL", "");
     vi.stubEnv("GATEWAY_ADMIN_TOKEN", "");
     const { getEnv } = await import("@/lib/env");
     expect(() => getEnv()).toThrow(/GATEWAY_BASE_URL/);
+  });
+
+  it("treats GATEWAY_ADMIN_TOKEN as optional", async () => {
+    vi.stubEnv("GATEWAY_BASE_URL", "http://host:8080");
+    vi.stubEnv("GATEWAY_ADMIN_TOKEN", "");
+    const { getEnv } = await import("@/lib/env");
+    const env = getEnv();
+    expect(env.GATEWAY_ADMIN_TOKEN).toBeUndefined();
+  });
+
+  it("keeps GATEWAY_ADMIN_TOKEN when provided", async () => {
+    vi.stubEnv("GATEWAY_BASE_URL", "http://host:8080");
+    vi.stubEnv("GATEWAY_ADMIN_TOKEN", "secret");
+    const { getEnv } = await import("@/lib/env");
+    expect(getEnv().GATEWAY_ADMIN_TOKEN).toBe("secret");
   });
 
   it("strips a trailing slash and defaults timeout to 5000", async () => {
