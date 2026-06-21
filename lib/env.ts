@@ -35,6 +35,12 @@ export interface Env {
    * omits `address`. Unset means the form field is required.
    */
   DEFAULT_PAYOUT_ADDRESS?: string;
+  /**
+   * Vercel "Protection Bypass for Automation" secret. When set, it is appended
+   * to the gateway callback URL as `x-vercel-protection-bypass` so the gateway's
+   * webhook POST passes Deployment Protection. Optional (absent locally).
+   */
+  VERCEL_AUTOMATION_BYPASS_SECRET?: string;
 }
 
 class MissingEnvError extends Error {
@@ -83,12 +89,16 @@ function readEnv(): Env {
   const DEFAULT_PAYOUT_ADDRESS =
     process.env.DEFAULT_PAYOUT_ADDRESS?.trim() || undefined;
 
+  const VERCEL_AUTOMATION_BYPASS_SECRET =
+    process.env.VERCEL_AUTOMATION_BYPASS_SECRET?.trim() || undefined;
+
   return {
     GATEWAY_BASE_URL: baseUrl,
     GATEWAY_ADMIN_TOKEN,
     GATEWAY_TIMEOUT_MS,
     PUBLIC_APP_URL,
     DEFAULT_PAYOUT_ADDRESS,
+    VERCEL_AUTOMATION_BYPASS_SECRET,
   };
 }
 

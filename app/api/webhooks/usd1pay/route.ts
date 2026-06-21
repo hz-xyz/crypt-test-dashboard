@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     body = raw.toString("utf8") || null;
   }
 
-  record({
+  await record({
     ref,
     uuid: extractCallbackUuid(body),
     signatureValid,
