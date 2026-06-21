@@ -8,26 +8,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { fetchCallbacks, fetchPayment } from "@/lib/api-client";
 import type { CreatePaymentView } from "@/lib/types";
 
+import { AddressQR, CopyableField } from "./address-display";
 import { CallbackLog } from "./callback-log";
 
 const POLL_MS = 4_000;
 const TERMINAL = new Set(["COMPLETED", "FAILED", "EXPIRED"]);
-
-function CopyableField({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <button
-        type="button"
-        onClick={() => void navigator.clipboard?.writeText(value)}
-        title="点击复制"
-        className="w-fit max-w-full truncate rounded bg-muted px-2 py-1 text-left font-mono text-xs hover:bg-muted/70"
-      >
-        {value}
-      </button>
-    </div>
-  );
-}
 
 /**
  * Track one payment: poll captured callbacks by ref; once a callback yields a
@@ -67,12 +52,15 @@ export function PaymentTracker({ created }: { created: CreatePaymentView }) {
             )}
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <CopyableField
-              label="收款地址 address_in"
-              value={created.addressIn}
-            />
-            <CopyableField label="关联 ref" value={created.ref} />
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="grid grid-cols-1 gap-3">
+              <CopyableField
+                label="收款地址 address_in"
+                value={created.addressIn}
+              />
+              <CopyableField label="关联 ref" value={created.ref} />
+            </div>
+            <AddressQR address={created.addressIn} />
           </div>
 
           <p className="text-xs text-muted-foreground">
