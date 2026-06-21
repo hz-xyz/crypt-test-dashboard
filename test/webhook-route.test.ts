@@ -79,7 +79,7 @@ describe("POST /api/webhooks/usd1pay", () => {
 
 describe("GET /api/webhooks", () => {
   it("filters by ref when provided", async () => {
-    vi.mocked(listByRef).mockReturnValue([
+    vi.mocked(listByRef).mockResolvedValue([
       {
         ref: "r1",
         signatureValid: true,

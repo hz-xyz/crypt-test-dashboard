@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const ref = new URL(request.url).searchParams.get("ref");
-  const records = ref ? listByRef(ref) : listRecent();
+  const records = ref ? await listByRef(ref) : await listRecent();
 
   return NextResponse.json(records, {
     headers: { "Cache-Control": "no-store" },
