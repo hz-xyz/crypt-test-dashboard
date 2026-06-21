@@ -58,4 +58,26 @@ describe("callback-store (Redis backend)", () => {
     lrange.mockResolvedValue(null);
     expect(await listByRef("nope")).toEqual([]);
   });
+
+  it("record swallows a Redis error and does not throw", async () => {
+    lpush.mockRejectedValueOnce(new Error("redis down"));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    await expect(record(entry)).resolves.toBeUndefined();
+    expect(errSpy).toHaveBeenCalled();
+    errSpy.mockRestore();
+  });
+
+  it("listByRef returns [] when Redis throws", async () => {
+    lrange.mockRejectedValueOnce(new Error("redis down"));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(await listByRef("r1")).toEqual([]);
+    errSpy.mockRestore();
+  });
+
+  it("listRecent returns [] when Redis throws", async () => {
+    lrange.mockRejectedValueOnce(new Error("redis down"));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(await listRecent()).toEqual([]);
+    errSpy.mockRestore();
+  });
 });

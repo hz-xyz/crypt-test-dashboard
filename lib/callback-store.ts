@@ -27,15 +27,21 @@ let buffer: CallbackRecord[] = [];
 export async function record(entry: CallbackRecord): Promise<void> {
   const redis = getRedis();
   if (redis) {
-    const k = refKey(entry.ref);
-    // LPUSH puts newest at the head; LTRIM caps; EXPIRE bounds retention.
-    // @upstash/redis serializes the object automatically.
-    await redis.lpush(k, entry);
-    await redis.ltrim(k, 0, CALLBACK_BUFFER_CAP - 1);
-    await redis.expire(k, CALLBACK_TTL_SECONDS);
-    await redis.lpush(RECENT_KEY, entry);
-    await redis.ltrim(RECENT_KEY, 0, RECENT_CAP - 1);
-    await redis.expire(RECENT_KEY, CALLBACK_TTL_SECONDS);
+    try {
+      const k = refKey(entry.ref);
+      // LPUSH puts newest at the head; LTRIM caps; EXPIRE bounds retention.
+      // @upstash/redis serializes the object automatically.
+      await redis.lpush(k, entry);
+      await redis.ltrim(k, 0, CALLBACK_BUFFER_CAP - 1);
+      await redis.expire(k, CALLBACK_TTL_SECONDS);
+      await redis.lpush(RECENT_KEY, entry);
+      await redis.ltrim(RECENT_KEY, 0, RECENT_CAP - 1);
+      await redis.expire(RECENT_KEY, CALLBACK_TTL_SECONDS);
+    } catch (e) {
+      // Never throw: the webhook must still reply 200 "ok" so the gateway does
+      // not enter a retry storm. Losing one captured callback is preferable.
+      console.error("[callback-store] record failed:", e);
+    }
     return;
   }
   buffer.push(entry);
@@ -48,7 +54,12 @@ export async function record(entry: CallbackRecord): Promise<void> {
 export async function listByRef(ref: string): Promise<CallbackRecord[]> {
   const redis = getRedis();
   if (redis) {
-    return (await redis.lrange<CallbackRecord>(refKey(ref), 0, -1)) ?? [];
+    try {
+      return (await redis.lrange<CallbackRecord>(refKey(ref), 0, -1)) ?? [];
+    } catch (e) {
+      console.error("[callback-store] listByRef failed:", e);
+      return [];
+    }
   }
   return buffer.filter((r) => r.ref === ref).reverse();
 }
@@ -59,7 +70,12 @@ export async function listRecent(
 ): Promise<CallbackRecord[]> {
   const redis = getRedis();
   if (redis) {
-    return (await redis.lrange<CallbackRecord>(RECENT_KEY, 0, limit - 1)) ?? [];
+    try {
+      return (await redis.lrange<CallbackRecord>(RECENT_KEY, 0, limit - 1)) ?? [];
+    } catch (e) {
+      console.error("[callback-store] listRecent failed:", e);
+      return [];
+    }
   }
   return buffer.slice(-limit).reverse();
 }
