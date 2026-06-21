@@ -71,7 +71,9 @@ export async function listRecent(
   const redis = getRedis();
   if (redis) {
     try {
-      return (await redis.lrange<CallbackRecord>(RECENT_KEY, 0, limit - 1)) ?? [];
+      return (
+        (await redis.lrange<CallbackRecord>(RECENT_KEY, 0, limit - 1)) ?? []
+      );
     } catch (e) {
       console.error("[callback-store] listRecent failed:", e);
       return [];

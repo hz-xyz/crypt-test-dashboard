@@ -34,6 +34,7 @@
 ### Task A1: `lib/redis.ts` — lazy Upstash client
 
 **Files:**
+
 - Create: `lib/redis.ts`
 - Test: `test/redis.test.ts`
 
@@ -125,6 +126,7 @@ git commit -m "feat: lazy Upstash Redis client (KV_REST_API_* or null)"
 ### Task A2: `lib/callback-store.ts` — async, Redis + in-memory backends
 
 **Files:**
+
 - Modify: `lib/callback-store.ts` (full rewrite of body, same exports)
 - Modify: `test/callback-store.test.ts` (await the now-async API)
 - Test: `test/callback-store.redis.test.ts` (new)
@@ -363,6 +365,7 @@ git commit -m "feat: Redis-backed callback store with in-memory fallback (async)
 ### Task A3: webhook routes await the async store
 
 **Files:**
+
 - Modify: `app/api/webhooks/usd1pay/route.ts`
 - Modify: `app/api/webhooks/route.ts`
 - Test: `test/webhook-route.test.ts` (existing — no edit, just re-run)
@@ -372,13 +375,13 @@ git commit -m "feat: Redis-backed callback store with in-memory fallback (async)
 In `app/api/webhooks/usd1pay/route.ts`, change the `record({ ... })` call to `await`:
 
 ```ts
-  await record({
-    ref,
-    uuid: extractCallbackUuid(body),
-    signatureValid,
-    receivedAt: new Date().toISOString(),
-    body,
-  });
+await record({
+  ref,
+  uuid: extractCallbackUuid(body),
+  signatureValid,
+  receivedAt: new Date().toISOString(),
+  body,
+});
 ```
 
 - [ ] **Step 2: Await the reads in the GET handler**
@@ -386,7 +389,7 @@ In `app/api/webhooks/usd1pay/route.ts`, change the `record({ ... })` call to `aw
 In `app/api/webhooks/route.ts`, change:
 
 ```ts
-  const records = ref ? await listByRef(ref) : await listRecent();
+const records = ref ? await listByRef(ref) : await listRecent();
 ```
 
 - [ ] **Step 3: Run the existing webhook route tests**
@@ -406,6 +409,7 @@ git commit -m "refactor: await async callback store in webhook routes"
 ### Task A4: env var + bypass token on the callback URL
 
 **Files:**
+
 - Modify: `lib/env.ts`
 - Modify: `app/api/payments/route.ts`
 - Test: `test/payments-routes.test.ts` (extend); `test/env.test.ts` (extend)
@@ -415,19 +419,19 @@ git commit -m "refactor: await async callback store in webhook routes"
 Append to `test/env.test.ts` inside the `describe("getEnv", ...)` block:
 
 ```ts
-  it("reads optional VERCEL_AUTOMATION_BYPASS_SECRET", async () => {
-    vi.stubEnv("GATEWAY_BASE_URL", "http://host:8080");
-    vi.stubEnv("VERCEL_AUTOMATION_BYPASS_SECRET", "byp");
-    const { getEnv } = await import("@/lib/env");
-    expect(getEnv().VERCEL_AUTOMATION_BYPASS_SECRET).toBe("byp");
-  });
+it("reads optional VERCEL_AUTOMATION_BYPASS_SECRET", async () => {
+  vi.stubEnv("GATEWAY_BASE_URL", "http://host:8080");
+  vi.stubEnv("VERCEL_AUTOMATION_BYPASS_SECRET", "byp");
+  const { getEnv } = await import("@/lib/env");
+  expect(getEnv().VERCEL_AUTOMATION_BYPASS_SECRET).toBe("byp");
+});
 
-  it("leaves VERCEL_AUTOMATION_BYPASS_SECRET undefined when unset", async () => {
-    vi.stubEnv("GATEWAY_BASE_URL", "http://host:8080");
-    vi.stubEnv("VERCEL_AUTOMATION_BYPASS_SECRET", "");
-    const { getEnv } = await import("@/lib/env");
-    expect(getEnv().VERCEL_AUTOMATION_BYPASS_SECRET).toBeUndefined();
-  });
+it("leaves VERCEL_AUTOMATION_BYPASS_SECRET undefined when unset", async () => {
+  vi.stubEnv("GATEWAY_BASE_URL", "http://host:8080");
+  vi.stubEnv("VERCEL_AUTOMATION_BYPASS_SECRET", "");
+  const { getEnv } = await import("@/lib/env");
+  expect(getEnv().VERCEL_AUTOMATION_BYPASS_SECRET).toBeUndefined();
+});
 ```
 
 - [ ] **Step 2: Run it to verify it fails**
@@ -451,8 +455,8 @@ In the `Env` interface, after `DEFAULT_PAYOUT_ADDRESS?: string;`, add:
 In `readEnv()`, after the `DEFAULT_PAYOUT_ADDRESS` line, add:
 
 ```ts
-  const VERCEL_AUTOMATION_BYPASS_SECRET =
-    process.env.VERCEL_AUTOMATION_BYPASS_SECRET?.trim() || undefined;
+const VERCEL_AUTOMATION_BYPASS_SECRET =
+  process.env.VERCEL_AUTOMATION_BYPASS_SECRET?.trim() || undefined;
 ```
 
 In the returned object, after `DEFAULT_PAYOUT_ADDRESS,`, add:
@@ -471,32 +475,32 @@ Expected: PASS.
 In `test/payments-routes.test.ts`, append inside `describe("POST /api/payments", ...)`:
 
 ```ts
-  it("appends the bypass token to the callback URL when configured", async () => {
-    vi.mocked(getEnv).mockReturnValue({
-      PUBLIC_APP_URL: "https://app.example.com",
-      DEFAULT_PAYOUT_ADDRESS: undefined,
-      VERCEL_AUTOMATION_BYPASS_SECRET: "byp",
-    } as ReturnType<typeof getEnv>);
-    vi.mocked(createPayment).mockResolvedValue({
-      ok: true,
-      data: {
-        ref: "x",
-        addressIn: "0xAbc",
-        callbackUrl: "u",
-        raw: {},
-        fetchedAt: "t",
-      },
-    });
-
-    await createPOST(postReq({ token: "usd1", address: "0xDef" }));
-    const callbackUrl = vi.mocked(createPayment).mock.calls[0][2] as string;
-    const u = new URL(callbackUrl);
-    expect(u.origin + u.pathname).toBe(
-      "https://app.example.com/api/webhooks/usd1pay",
-    );
-    expect(u.searchParams.get("x-vercel-protection-bypass")).toBe("byp");
-    expect(u.searchParams.get("ref")).toBeTruthy();
+it("appends the bypass token to the callback URL when configured", async () => {
+  vi.mocked(getEnv).mockReturnValue({
+    PUBLIC_APP_URL: "https://app.example.com",
+    DEFAULT_PAYOUT_ADDRESS: undefined,
+    VERCEL_AUTOMATION_BYPASS_SECRET: "byp",
+  } as ReturnType<typeof getEnv>);
+  vi.mocked(createPayment).mockResolvedValue({
+    ok: true,
+    data: {
+      ref: "x",
+      addressIn: "0xAbc",
+      callbackUrl: "u",
+      raw: {},
+      fetchedAt: "t",
+    },
   });
+
+  await createPOST(postReq({ token: "usd1", address: "0xDef" }));
+  const callbackUrl = vi.mocked(createPayment).mock.calls[0][2] as string;
+  const u = new URL(callbackUrl);
+  expect(u.origin + u.pathname).toBe(
+    "https://app.example.com/api/webhooks/usd1pay",
+  );
+  expect(u.searchParams.get("x-vercel-protection-bypass")).toBe("byp");
+  expect(u.searchParams.get("ref")).toBeTruthy();
+});
 ```
 
 - [ ] **Step 6: Run it to verify it fails**
@@ -509,24 +513,21 @@ Expected: FAIL — callback URL has no `x-vercel-protection-bypass` param.
 In `app/api/payments/route.ts`, replace:
 
 ```ts
-  const ref = crypto.randomUUID();
-  const callbackUrl = `${env.PUBLIC_APP_URL}/api/webhooks/usd1pay?ref=${ref}`;
+const ref = crypto.randomUUID();
+const callbackUrl = `${env.PUBLIC_APP_URL}/api/webhooks/usd1pay?ref=${ref}`;
 ```
 
 with:
 
 ```ts
-  const ref = crypto.randomUUID();
-  // Build the callback URL; when running behind Vercel Deployment Protection,
-  // append the automation bypass token so the gateway's POST is not 401'd.
-  const params = new URLSearchParams({ ref });
-  if (env.VERCEL_AUTOMATION_BYPASS_SECRET) {
-    params.set(
-      "x-vercel-protection-bypass",
-      env.VERCEL_AUTOMATION_BYPASS_SECRET,
-    );
-  }
-  const callbackUrl = `${env.PUBLIC_APP_URL}/api/webhooks/usd1pay?${params.toString()}`;
+const ref = crypto.randomUUID();
+// Build the callback URL; when running behind Vercel Deployment Protection,
+// append the automation bypass token so the gateway's POST is not 401'd.
+const params = new URLSearchParams({ ref });
+if (env.VERCEL_AUTOMATION_BYPASS_SECRET) {
+  params.set("x-vercel-protection-bypass", env.VERCEL_AUTOMATION_BYPASS_SECRET);
+}
+const callbackUrl = `${env.PUBLIC_APP_URL}/api/webhooks/usd1pay?${params.toString()}`;
 ```
 
 - [ ] **Step 8: Run the payments route tests to verify they pass**
@@ -548,6 +549,7 @@ git commit -m "feat: append Vercel bypass token to gateway callback URL"
 ### Task B1: `components/console/address-display.tsx`
 
 **Files:**
+
 - Create: `components/console/address-display.tsx`
 - Test: `test/address-display.test.tsx`
 
@@ -704,6 +706,7 @@ git commit -m "feat: address-display — copy button with feedback + raw-address
 ### Task B2: wire address-display into the payment tracker
 
 **Files:**
+
 - Modify: `components/console/payment-tracker.tsx`
 
 - [ ] **Step 1: Replace the local CopyableField with the shared component**
@@ -720,28 +723,22 @@ import { AddressQR, CopyableField } from "./address-display";
 3. Replace the address/ref grid block:
 
 ```tsx
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <CopyableField
-              label="收款地址 address_in"
-              value={created.addressIn}
-            />
-            <CopyableField label="关联 ref" value={created.ref} />
-          </div>
+<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+  <CopyableField label="收款地址 address_in" value={created.addressIn} />
+  <CopyableField label="关联 ref" value={created.ref} />
+</div>
 ```
 
 with:
 
 ```tsx
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="grid grid-cols-1 gap-3">
-              <CopyableField
-                label="收款地址 address_in"
-                value={created.addressIn}
-              />
-              <CopyableField label="关联 ref" value={created.ref} />
-            </div>
-            <AddressQR address={created.addressIn} />
-          </div>
+<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+  <div className="grid grid-cols-1 gap-3">
+    <CopyableField label="收款地址 address_in" value={created.addressIn} />
+    <CopyableField label="关联 ref" value={created.ref} />
+  </div>
+  <AddressQR address={created.addressIn} />
+</div>
 ```
 
 - [ ] **Step 2: Run the full test suite + typecheck**
@@ -763,6 +760,7 @@ git commit -m "feat: show copy button + QR for the deposit address in /console"
 ### Task C1: document online mode and run all gates
 
 **Files:**
+
 - Modify: `.env.example`
 - Modify: `README.md`
 
