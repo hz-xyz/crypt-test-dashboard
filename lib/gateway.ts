@@ -25,8 +25,13 @@ export type GatewayResult<T> = Ok<T> | Err;
 /**
  * Low-level fetch to the gateway with a hard timeout and normalized errors.
  * Returns the parsed JSON (or raw text) on success.
+ *
+ * Exported so sibling server-only clients (e.g. lib/payments.ts) can reuse the
+ * same token/timeout/error-normalization without duplicating it.
  */
-async function gatewayFetch(path: string): Promise<GatewayResult<unknown>> {
+export async function gatewayFetch(
+  path: string,
+): Promise<GatewayResult<unknown>> {
   let env: ReturnType<typeof getEnv>;
   try {
     env = getEnv();
