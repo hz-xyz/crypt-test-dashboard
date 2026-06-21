@@ -48,4 +48,32 @@ describe("getEnv", () => {
     const { getEnv } = await import("@/lib/env");
     expect(() => getEnv()).toThrow(/positive number/);
   });
+
+  it("defaults PUBLIC_APP_URL to http://localhost:3000 when unset", async () => {
+    vi.stubEnv("GATEWAY_BASE_URL", "http://host:8080");
+    vi.stubEnv("PUBLIC_APP_URL", "");
+    const { getEnv } = await import("@/lib/env");
+    expect(getEnv().PUBLIC_APP_URL).toBe("http://localhost:3000");
+  });
+
+  it("strips a trailing slash from PUBLIC_APP_URL", async () => {
+    vi.stubEnv("GATEWAY_BASE_URL", "http://host:8080");
+    vi.stubEnv("PUBLIC_APP_URL", "http://localhost:4000/");
+    const { getEnv } = await import("@/lib/env");
+    expect(getEnv().PUBLIC_APP_URL).toBe("http://localhost:4000");
+  });
+
+  it("leaves DEFAULT_PAYOUT_ADDRESS undefined when unset", async () => {
+    vi.stubEnv("GATEWAY_BASE_URL", "http://host:8080");
+    vi.stubEnv("DEFAULT_PAYOUT_ADDRESS", "");
+    const { getEnv } = await import("@/lib/env");
+    expect(getEnv().DEFAULT_PAYOUT_ADDRESS).toBeUndefined();
+  });
+
+  it("trims DEFAULT_PAYOUT_ADDRESS when provided", async () => {
+    vi.stubEnv("GATEWAY_BASE_URL", "http://host:8080");
+    vi.stubEnv("DEFAULT_PAYOUT_ADDRESS", "  0xABCdef  ");
+    const { getEnv } = await import("@/lib/env");
+    expect(getEnv().DEFAULT_PAYOUT_ADDRESS).toBe("0xABCdef");
+  });
 });
