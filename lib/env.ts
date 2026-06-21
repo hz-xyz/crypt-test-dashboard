@@ -22,6 +22,19 @@ export interface Env {
   GATEWAY_ADMIN_TOKEN?: string;
   /** Per-request timeout to the gateway, in milliseconds. Default 5000. */
   GATEWAY_TIMEOUT_MS: number;
+  /**
+   * This app's own externally-reachable base URL. Used ONLY server-side to
+   * build the absolute callback URL handed to the gateway (R5 payment console).
+   * Must be reachable BY the gateway. Defaults to http://localhost:3000.
+   * NOT secret, but NOT NEXT_PUBLIC_ — it is read on the server only.
+   */
+  PUBLIC_APP_URL: string;
+  /**
+   * Optional default payout address (address_out) for the R5 console: pre-fills
+   * the create form and serves as a server-side fallback when a create request
+   * omits `address`. Unset means the form field is required.
+   */
+  DEFAULT_PAYOUT_ADDRESS?: string;
 }
 
 class MissingEnvError extends Error {
@@ -60,10 +73,22 @@ function readEnv(): Env {
   // Normalize: strip a single trailing slash so path joins are predictable.
   const baseUrl = GATEWAY_BASE_URL!.replace(/\/+$/, "");
 
+  // Our own externally-reachable base URL (for building gateway callbacks).
+  // Strip trailing slashes so callback URL joins are predictable.
+  const PUBLIC_APP_URL = (
+    process.env.PUBLIC_APP_URL?.trim() || "http://localhost:3000"
+  ).replace(/\/+$/, "");
+
+  // Optional default payout address; empty/unset means undefined.
+  const DEFAULT_PAYOUT_ADDRESS =
+    process.env.DEFAULT_PAYOUT_ADDRESS?.trim() || undefined;
+
   return {
     GATEWAY_BASE_URL: baseUrl,
     GATEWAY_ADMIN_TOKEN,
     GATEWAY_TIMEOUT_MS,
+    PUBLIC_APP_URL,
+    DEFAULT_PAYOUT_ADDRESS,
   };
 }
 

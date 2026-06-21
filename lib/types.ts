@@ -126,7 +126,7 @@ export interface InfoView {
  */
 export interface ApiError {
   error: {
-    kind: "timeout" | "network" | "upstream" | "parse" | "config";
+    kind: "timeout" | "network" | "upstream" | "parse" | "config" | "gateway";
     message: string;
     /** Upstream HTTP status, when kind === "upstream". */
     status?: number;
@@ -141,4 +141,73 @@ export function isApiError(value: unknown): value is ApiError {
     "error" in value &&
     typeof (value as ApiError).error === "object"
   );
+}
+
+// ---------------------------------------------------------------------------
+// R5: test payment console (source: CryptAPI-style gateway endpoints).
+// ---------------------------------------------------------------------------
+
+/** Tokens the gateway accepts, lowercase as required by the create endpoint. */
+export const PAYMENT_TOKENS = ["usd1", "usdt", "usdc"] as const;
+export type PaymentToken = (typeof PAYMENT_TOKENS)[number];
+
+/** Input for creating a test payment (POSTed to this app's /api/payments). */
+export interface CreatePaymentInput {
+  token: PaymentToken;
+  /** address_out. Omit to fall back to the server's DEFAULT_PAYOUT_ADDRESS. */
+  address?: string;
+  /** Required confirmations, 1–1000. Omit to use the chain default. */
+  confirmations?: number;
+  /** Request a pending-stage callback too (needs gateway enablePendingWebhooks). */
+  pending?: boolean;
+}
+
+/** Normalized result of creating a payment. */
+export interface CreatePaymentView {
+  /** Nonce this app generated to correlate the gateway's callback. */
+  ref: string;
+  /** address_in — the unique on-chain deposit address for this payment. */
+  addressIn: string;
+  /** The unique callback URL handed to the gateway (carries `ref`). */
+  callbackUrl: string;
+  /** Raw create payload, surfaced for debugging. */
+  raw: unknown;
+  /** ISO timestamp of when the gateway responded (server-side). */
+  fetchedAt: string;
+}
+
+/**
+ * Normalized single-payment view (source: gateway GET /api/v1/payments/{id}).
+ * Amounts are converted from 18-decimal wei-style strings to coin-unit strings.
+ */
+export interface PaymentView {
+  id: string;
+  token?: string;
+  addressIn?: string;
+  /** Lifecycle status; unknown values are passed through verbatim. */
+  status: string;
+  /** amount_received in coin units (already divided by 10^18). */
+  amountReceived?: string;
+  /** fee in coin units (already divided by 10^18). */
+  fee?: string;
+  txHashIn?: string | null;
+  txHashOut?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  raw: unknown;
+  fetchedAt: string;
+}
+
+/** A callback captured from the gateway, held in the in-memory ring buffer. */
+export interface CallbackRecord {
+  /** Correlation nonce from the callback URL's `ref` query param. */
+  ref: string;
+  /** Payment UUID from the callback body, if present. */
+  uuid?: string;
+  /** Whether the x-ca-signature verified against the gateway's public key. */
+  signatureValid: boolean;
+  /** ISO timestamp of when this app received the callback. */
+  receivedAt: string;
+  /** Parsed callback body (raw bytes were used for signature verification). */
+  body: unknown;
 }

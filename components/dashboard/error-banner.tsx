@@ -8,6 +8,7 @@ const KIND_LABEL: Record<string, string> = {
   upstream: "网关返回错误",
   parse: "网关响应解析失败",
   config: "服务端配置缺失",
+  gateway: "网关业务错误",
 };
 
 /**
