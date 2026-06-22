@@ -75,7 +75,8 @@ export async function GET(
       JSON.stringify({
         error: {
           kind: "upstream",
-          message: `Gateway responded ${upstream.status} ${upstream.statusText}`.trim(),
+          message:
+            `Gateway responded ${upstream.status} ${upstream.statusText}`.trim(),
           status: upstream.status,
         },
       }),

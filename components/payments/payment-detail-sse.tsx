@@ -129,9 +129,7 @@ export function PaymentDetailSse({ paymentId }: { paymentId: string }) {
             <Field
               label="创建时间"
               value={
-                p.createdAt
-                  ? new Date(p.createdAt).toLocaleString()
-                  : undefined
+                p.createdAt ? new Date(p.createdAt).toLocaleString() : undefined
               }
             />
           </div>

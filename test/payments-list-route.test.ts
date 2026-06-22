@@ -32,9 +32,7 @@ describe("GET /api/payments (list)", () => {
         fetchedAt: "t",
       },
     });
-    const res = await paymentsGET(
-      new Request("http://localhost/api/payments"),
-    );
+    const res = await paymentsGET(new Request("http://localhost/api/payments"));
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.items).toHaveLength(2);
@@ -58,9 +56,7 @@ describe("GET /api/payments (list)", () => {
       ok: true,
       data: { items: [], total: 0, raw: [], fetchedAt: "t" },
     });
-    await paymentsGET(
-      new Request("http://localhost/api/payments?limit=999"),
-    );
+    await paymentsGET(new Request("http://localhost/api/payments?limit=999"));
     expect(fetchPayments).toHaveBeenCalledWith(100, 0);
   });
 
@@ -70,9 +66,7 @@ describe("GET /api/payments (list)", () => {
       httpStatus: 502,
       error: { kind: "upstream", message: "Gateway 500", status: 500 },
     });
-    const res = await paymentsGET(
-      new Request("http://localhost/api/payments"),
-    );
+    const res = await paymentsGET(new Request("http://localhost/api/payments"));
     expect(res.status).toBe(502);
     const body = await res.json();
     expect(body.error.kind).toBe("upstream");

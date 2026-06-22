@@ -15,9 +15,7 @@ const POLL_MS = 4_000;
 const LIST_LIMIT = 20;
 
 function PaymentRow({ item }: { item: PaymentListItem }) {
-  const time = item.createdAt
-    ? new Date(item.createdAt).toLocaleString()
-    : "—";
+  const time = item.createdAt ? new Date(item.createdAt).toLocaleString() : "—";
 
   return (
     <Link
