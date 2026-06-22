@@ -198,6 +198,38 @@ export interface PaymentView {
   fetchedAt: string;
 }
 
+// ---------------------------------------------------------------------------
+// R2: recent payment list + SSE real-time status.
+// ---------------------------------------------------------------------------
+
+/** A payment item in the list view (from GET /api/v1/payments). */
+export interface PaymentListItem {
+  id: string;
+  token?: string;
+  addressIn?: string;
+  status: string;
+  amountReceived?: string;
+  fee?: string;
+  txHashIn?: string | null;
+  txHashOut?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** Paginated list of payments. */
+export interface PaymentListView {
+  items: PaymentListItem[];
+  total?: number;
+  raw: unknown;
+  fetchedAt: string;
+}
+
+/** An SSE event from the gateway's /api/v1/payments/:id/events stream. */
+export interface PaymentEvent {
+  event: string;
+  data: Record<string, unknown>;
+}
+
 /** A callback captured from the gateway, held in the in-memory ring buffer. */
 export interface CallbackRecord {
   /** Correlation nonce from the callback URL's `ref` query param. */

@@ -3,7 +3,13 @@ import "server-only";
 import crypto from "node:crypto";
 
 import { gatewayFetch, type GatewayResult } from "./gateway";
-import type { CreatePaymentView, PaymentToken, PaymentView } from "./types";
+import type {
+  CreatePaymentView,
+  PaymentListItem,
+  PaymentListView,
+  PaymentToken,
+  PaymentView,
+} from "./types";
 
 /**
  * Server-only client for the R5 test-payment console.
@@ -152,6 +158,86 @@ export async function createPayment(
   }
 
   return { ok: true, data: normalizeCreate(data, ref, callbackUrl) };
+}
+
+// ---------------------------------------------------------------------------
+// Payment list (R2)
+// ---------------------------------------------------------------------------
+
+/** Normalize a single payment item from the list. Amounts -> coin units. */
+function normalizeListItem(raw: unknown): PaymentListItem | undefined {
+  if (typeof raw !== "object" || raw === null) return undefined;
+  const obj = raw as Record<string, unknown>;
+  const id = asString(pick(obj, ["id", "uuid"]));
+  if (!id) return undefined;
+
+  return {
+    id,
+    token: asString(pick(obj, ["token", "coin"])),
+    addressIn: asString(pick(obj, ["address_in", "addressIn"])),
+    status: asString(pick(obj, ["status"])) ?? "UNKNOWN",
+    amountReceived: coinAmount(
+      pick(obj, ["amount_received", "amountReceived"]),
+    ),
+    fee: coinAmount(pick(obj, ["fee"])),
+    txHashIn:
+      asString(pick(obj, ["tx_hash_in", "txHashIn", "txid_in"])) ?? null,
+    txHashOut:
+      asString(pick(obj, ["tx_hash_out", "txHashOut", "txid_out"])) ?? null,
+    createdAt: asString(pick(obj, ["created_at", "createdAt"])),
+    updatedAt: asString(pick(obj, ["updated_at", "updatedAt"])),
+  };
+}
+
+/**
+ * Normalize the payments list response. Handles:
+ * 1. Plain array: [ { id, status, ... }, ... ]
+ * 2. Wrapped: { data: [...], total: N } or { payments: [...], total: N }
+ */
+export function normalizePaymentList(raw: unknown): PaymentListView {
+  const fetchedAt = new Date().toISOString();
+  const base: PaymentListView = { items: [], raw, fetchedAt };
+
+  if (Array.isArray(raw)) {
+    base.items = raw
+      .map(normalizeListItem)
+      .filter((x): x is PaymentListItem => x !== undefined);
+    base.total = base.items.length;
+    return base;
+  }
+
+  if (typeof raw !== "object" || raw === null) return base;
+
+  const obj = raw as Record<string, unknown>;
+  const list = pick(obj, ["data", "payments", "items", "results"]);
+  if (Array.isArray(list)) {
+    base.items = list
+      .map(normalizeListItem)
+      .filter((x): x is PaymentListItem => x !== undefined);
+  }
+
+  const total = pick(obj, ["total", "count", "totalCount", "total_count"]);
+  if (typeof total === "number" && Number.isFinite(total)) {
+    base.total = total;
+  } else {
+    base.total = base.items.length;
+  }
+
+  return base;
+}
+
+/** Fetch recent payments from the gateway. */
+export async function fetchPayments(
+  limit = 20,
+  offset = 0,
+): Promise<GatewayResult<PaymentListView>> {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  const res = await gatewayFetch(`/api/v1/payments?${params.toString()}`);
+  if (!res.ok) return res;
+  return { ok: true, data: normalizePaymentList(res.data) };
 }
 
 /** Query a single payment by id (uuid). */

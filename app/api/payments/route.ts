@@ -3,19 +3,36 @@ import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 
 import { getEnv } from "@/lib/env";
-import { createPayment } from "@/lib/payments";
+import { createPayment, fetchPayments } from "@/lib/payments";
 import { PAYMENT_TOKENS, type CreatePaymentInput } from "@/lib/types";
 
 /**
+ * GET  /api/payments — list recent payments (R2, proxies GET /api/v1/payments).
  * POST /api/payments — create a test payment via the gateway (R5 console).
- *
- * The browser POSTs { token, address?, confirmations?, pending? }. This route
- * mints a unique `ref` + absolute callback URL (so the gateway can call us
- * back), resolves `address` (falling back to DEFAULT_PAYOUT_ADDRESS), and
- * returns the normalized CreatePaymentView. The gateway URL/token never leave
- * the server.
  */
 export const dynamic = "force-dynamic";
+
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const limit = Math.min(
+    Math.max(1, Number(url.searchParams.get("limit")) || 20),
+    100,
+  );
+  const offset = Math.max(0, Number(url.searchParams.get("offset")) || 0);
+
+  const result = await fetchPayments(limit, offset);
+
+  if (!result.ok) {
+    return NextResponse.json(
+      { error: result.error },
+      { status: result.httpStatus },
+    );
+  }
+
+  return NextResponse.json(result.data, {
+    headers: { "Cache-Control": "no-store" },
+  });
+}
 
 export async function POST(request: Request) {
   let input: Partial<CreatePaymentInput>;

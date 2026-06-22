@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { RecentPayments } from "@/components/payments/recent-payments";
 import { fetchHealth, fetchInfo, fetchMetrics } from "@/lib/api-client";
 
 import { ChainInfo } from "./chain-info";
@@ -127,13 +128,21 @@ export function Dashboard() {
         )}
       </section>
 
+      {/* Recent payments (R2) */}
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-semibold text-muted-foreground">
+          最近支付流水
+        </h2>
+        <RecentPayments />
+      </section>
+
       {/* Placeholders for not-yet-implemented panels (structure reserved). */}
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold text-muted-foreground">
           后续功能(占位)
         </h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {["支付流水", "Webhook 重放", "测试网余额"].map((label) => (
+          {["Webhook 重放", "测试网余额"].map((label) => (
             <Card key={label} className="border-dashed opacity-70">
               <CardContent className="flex h-20 items-center justify-center p-4">
                 <span className="text-sm text-muted-foreground">

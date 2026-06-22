@@ -5,6 +5,7 @@ import type {
   HealthView,
   InfoView,
   MetricsView,
+  PaymentListView,
   PaymentView,
 } from "./types";
 import { isApiError } from "./types";
@@ -136,4 +137,64 @@ export function fetchCallbacks(ref: string): Promise<CallbackRecord[]> {
   return getJson<CallbackRecord[]>(
     `/api/webhooks?ref=${encodeURIComponent(ref)}`,
   );
+}
+
+// --- R2: recent payment list + SSE real-time status -----------------------
+
+export function fetchPayments(
+  limit = 20,
+  offset = 0,
+): Promise<PaymentListView> {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  return getJson<PaymentListView>(`/api/payments?${params.toString()}`);
+}
+
+/**
+ * Subscribe to SSE events for a single payment. Returns a cleanup function.
+ * `onEvent` is called for each parsed SSE event; `onError` on connection errors.
+ */
+export function subscribePaymentEvents(
+  paymentId: string,
+  onEvent: (event: string, data: Record<string, unknown>) => void,
+  onError?: (err: Event) => void,
+): () => void {
+  const url = `/api/payments/${encodeURIComponent(paymentId)}/events`;
+  const source = new EventSource(url);
+
+  source.onmessage = (e) => {
+    try {
+      const data = JSON.parse(e.data) as Record<string, unknown>;
+      onEvent(e.type ?? "message", data);
+    } catch {
+      // Ignore unparseable events.
+    }
+  };
+
+  // Listen to named events too (gateway may use event: status_change etc.)
+  const named = [
+    "status_change",
+    "status",
+    "update",
+    "payment_update",
+    "payment",
+  ];
+  for (const name of named) {
+    source.addEventListener(name, ((e: MessageEvent) => {
+      try {
+        const data = JSON.parse(e.data) as Record<string, unknown>;
+        onEvent(name, data);
+      } catch {
+        // Ignore.
+      }
+    }) as EventListener);
+  }
+
+  if (onError) {
+    source.onerror = onError;
+  }
+
+  return () => source.close();
 }
